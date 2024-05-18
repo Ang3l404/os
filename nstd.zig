@@ -1,8 +1,12 @@
 //! The new standard.
+//! This file is the new standard of zig compared to the old standard
+//! while limited in functionality, it features LESS overbearing specific use case functions
+//! and instead optimizes on multi-purpose functions/methods.
 const std = @import("std");
 const print = &std.debug.print;
 const expect = &std.testing.expect;
 const eql = &std.mem.eql;
+const nstd = @This();
 
 /// finds the item and returns the index of that item
 /// with a passable last boolean to reverse the search..
@@ -29,19 +33,63 @@ pub inline fn find(comptime T:type, arr:anytype, tm:comptime_int, last:bool) usi
 
 
 /// Matrices .w.
-pub inline fn matrix (comptime t: type, comptime w: comptime_int, comptime h: comptime_int) type {
-  return struct {
-    width:?[w]t,
-    height:?[h]t,
+pub const Matrix = struct{
+  width:?i64,
+  height:?i64,
+  whole:i64,
+  data:?[]Item = undefined,
+  pub const Item = union{
+    int:?comptime_int,
+    float:?comptime_float,
+    is:?isize,
+    us:?usize,
+    bool:?bool,
+    arr:?[]type,
+    carr:?[]const type,
+    obj:?type,
 
-    fn init() @This() {
-      return .{};
+    fn valid(self:*Item) !bool {
+      return switch (self) {
+        self.*.int.?, self.*.float.?,
+        self.*.is.?, self.*.us.?,
+        self.*.bool.?, self.*.arr.?,
+        self.*.arr.?, self.*.carr.?,
+        self.*.obj.? => |thing| {
+          if (!thing) return false;
+          return true;
+        },
+
+        else => {
+          @compileError("Error, unexpected type!");
+        }
+      };
     }
-
-
   };
-  // return [w][h]t;
-}
+
+  pub fn init (comptime w:comptime_int, comptime h:comptime_int) Matrix {
+    return Matrix{
+      .width = w,
+      .height = h,
+      .whole = w * h,
+    };
+  }
+
+  // pub fn raw (self:*Matrix) *type {
+  //   var res = &[&self.*.w * &self.*.h]Item;
+  //   const dt = &self.*.data;
+
+  //   for (0..res.len) |i| {
+  //     switch (@TypeOf(dt.*[i])) {
+
+  //     }
+  //     // res[i] = @as(Item, self.data[i]) catch |welp| {
+  //     //   return welp;
+  //     // };
+  //   }
+
+  //   return res;
+  // }
+};
 
 pub inline fn object () type {
   return struct {
@@ -105,7 +153,6 @@ test "slice(find(..).*..find(..).*)" {
 }
 test "matrix -=-=" {
   print("\n",.{});
-  const hexM = matrix(i16, 5, 5);
-  print("{any}\n", .{hexM});
-  try expect(@TypeOf(hexM) == type);
+  const hexM = &Matrix.init(6, 6);
+  try expect(@TypeOf(hexM) == *const nstd.Matrix);
 }
