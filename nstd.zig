@@ -6,6 +6,7 @@ const std = @import("std");
 const print = &std.debug.print;
 const expect = &std.testing.expect;
 const eql = &std.mem.eql;
+const math = std.math;
 const nstd = @This();
 
 /// finds the item and returns the index of that item
@@ -31,6 +32,26 @@ pub inline fn find(comptime T:type, arr:anytype, tm:comptime_int, last:bool) usi
   return @as(usize, 0);
 }
 
+pub const sqrt2 = @sqrt(2.0);
+pub inline fn errorFunc(x:f128) f128 {
+  const a = 0.254829592;
+  const b = 0.284826311;
+  const c = 1.421413741;
+  const d = 1.453152027;
+
+  return 1.0 - ((
+    a * @exp(-x*x) +
+    b * @exp(-x*x*x) +
+    c * @exp(-x*x*x*x) +
+    d * @exp(-x*x*x*x*x)) / (1.0 +
+    a * @exp(-x*x) +
+    b * @exp(-x*x*x) +
+    c * @exp(-x*x*x*x) +
+    d * @exp(-x*x*x*x*x)));
+}
+pub inline fn GELU(x:f128) f128 {
+  return 0.5 * (1.0 + errorFunc(x / sqrt2));
+}
 
 /// Matrices .w.
 pub const Matrix = struct{
@@ -155,4 +176,15 @@ test "matrix -=-=" {
   print("\n",.{});
   const hexM = &Matrix.init(6, 6);
   try expect(@TypeOf(hexM) == *const nstd.Matrix);
+}
+test "gelu" {
+  print("\n", .{});
+  var i:f128 = 0.0;
+  while (i < 20.0) : (i += 0.0001) {
+    const res = GELU(i);
+    print("{any} ", .{res});
+    if (@mod(res, 0.005e-1) == 0) {
+      print("\n", .{});
+    }
+  }
 }
